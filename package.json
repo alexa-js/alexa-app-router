@@ -2,6 +2,23 @@
   "name": "alexa-app-router",
   "version": "0.0.1",
   "main": "alexa-app-router.js",
-  "readme": "README.md",
-  "license": "LICENSE.md"
+  "license": "SEE LICENSE IN LICENSE.md",
+  "description": "README.md",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nickcoury/alexa-app-router.git"
+  },
+  "keywords": [
+    "alexa",
+    "router",
+    "alexa-app"
+  ],
+  "author": "Nick Coury",
+  "bugs": {
+    "url": "https://github.com/nickcoury/alexa-app-router/issues"
+  },
+  "homepage": "https://github.com/nickcoury/alexa-app-router#readme"
 }
