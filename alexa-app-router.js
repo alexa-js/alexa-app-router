@@ -38,7 +38,7 @@ router.addRouter = function(app, config, intents, routes) {
         }
 
         if (typeof app.$$routeConfig.launch === 'function') {
-            app.launch = app.$$routeConfig.launch;
+            app.launch(app.$$routeConfig.launch);
         }
     }
 
