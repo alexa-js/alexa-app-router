@@ -2,7 +2,7 @@
 A simple router for the Alexa `alexa-app` library.
 
 # Usage
-Read the [alexa-app](https://github.com/matt-kruse/alexa-app) documentation before using this add-on utility.
+Read the [alexa-app](https://github.com/alexa-js/alexa-app) documentation before using this add-on utility.
 
 Sample app with code usage available in the [mountain top](https://github.com/nickcoury/mountain-top) project.
 
@@ -137,7 +137,7 @@ The router automatically registers any intents it find in the routes list with a
 The route names are simply strings. The `/` convention is used for familiarity, but not required.
 
 ### Backwards Compatibility
-All functionality is backwards compatible with [alexa-app](https://github.com/matt-kruse/alexa-app). Intents can be registered normally, the router intents are simply a shorthand for convenience.
+All functionality is backwards compatible with [alexa-app](https://github.com/alexa-js/alexa-app). Intents can be registered normally, the router intents are simply a shorthand for convenience.
 
 ## Future
 - Allow route parameters, e.g. `/go-to-page/{page}`.
@@ -155,5 +155,5 @@ var routes = {
 };
 ```
 
-Special thanks to Matt Kruse for his excellent [alexa-app](https://github.com/matt-kruse/alexa-app)!
+Special thanks to Matt Kruse for his excellent [alexa-app](https://github.com/alexa-js/alexa-app)!
 
