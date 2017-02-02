@@ -5,7 +5,7 @@
   "license": "SEE LICENSE IN LICENSE.md",
   "description": "README.md",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint alexa-app-router.js;"
   },
   "repository": {
     "type": "git",
@@ -13,12 +13,21 @@
   },
   "keywords": [
     "alexa",
-    "router",
-    "alexa-app"
+    "alexa-app",
+    "alexa-js",
+    "amazon",
+    "echo",
+    "router"
   ],
   "author": "Nick Coury",
   "bugs": {
     "url": "https://github.com/alexa-js/alexa-app-router/issues"
   },
-  "homepage": "https://github.com/alexa-js/alexa-app-router#readme"
+  "homepage": "https://github.com/alexa-js/alexa-app-router#readme",
+  "devDependencies": {
+    "eslint": "^3.14.1",
+    "eslint-config-standard": "^6.2.1",
+    "eslint-plugin-promise": "^3.4.0",
+    "eslint-plugin-standard": "^2.0.1"
+  }
 }
