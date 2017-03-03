@@ -3,5 +3,8 @@
     "plugins": [
         "standard",
         "promise"
-    ]
+    ],
+    "rules": {
+        "semi": ["error", "always"]
+    }
 }
