@@ -1,10 +1,11 @@
 {
-    "extends": "standard",
-    "plugins": [
-        "standard",
-        "promise"
-    ],
-    "rules": {
-        "semi": ["error", "always"]
-    }
+  "extends": "standard",
+  "plugins": [
+    "standard",
+    "promise"
+  ],
+  "rules": {
+    "semi": ["error", "always"],
+    "space-before-function-paren": ["error", "never"]
+  }
 }

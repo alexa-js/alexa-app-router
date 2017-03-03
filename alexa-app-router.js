@@ -1,6 +1,6 @@
 var router = {};
 
-router.addRouter = function (app, config, intents, routes) {
+router.addRouter = function(app, config, intents, routes) {
   if (!app) return;
 
   app.$$launch = app.launch;
@@ -13,7 +13,7 @@ router.addRouter = function (app, config, intents, routes) {
   registerRoutes(routes, config);
   registerDefaultIntents(routes);
 
-  function registerIntents (intents) {
+  function registerIntents(intents) {
     if (typeof intents !== 'object') return;
 
     for (var name in intents) {
@@ -25,7 +25,7 @@ router.addRouter = function (app, config, intents, routes) {
     }
   }
 
-  function registerRoutes (routes, config) {
+  function registerRoutes(routes, config) {
     app.$$routeList = routes || {};
     app.$$routeConfig = config || {};
 
@@ -42,7 +42,7 @@ router.addRouter = function (app, config, intents, routes) {
     }
   }
 
-  function registerDefaultIntents (routes) {
+  function registerDefaultIntents(routes) {
     for (var routeName in routes) {
       for (var intentName in routes[routeName]) {
         if (!app.intents[intentName]) {
@@ -52,11 +52,11 @@ router.addRouter = function (app, config, intents, routes) {
     }
   }
 
-  function noop (request, response) {}
+  function noop(request, response) {}
 
-  function launchHandler (handler) {
-    app.$$launch(function (request, response) {
-      response.route = function (nextRouteName) {
+  function launchHandler(handler) {
+    app.$$launch(function(request, response) {
+      response.route = function(nextRouteName) {
         response
           .shouldEndSession(false)
           .session('route', nextRouteName);
@@ -67,20 +67,20 @@ router.addRouter = function (app, config, intents, routes) {
     });
   }
 
-  function intentHandler (name, config, handler) {
+  function intentHandler(name, config, handler) {
     if (typeof config === 'function') {
       handler = config;
       config = null;
     }
 
-    app.$$intent(name, config, function (request, response) {
+    app.$$intent(name, config, function(request, response) {
       var routeName;
       routeName = request.session('route');
       response.session('route', null);
 
       request.route = routeName;
 
-      response.route = function (nextRouteName) {
+      response.route = function(nextRouteName) {
         response
           .shouldEndSession(false)
           .session('route', nextRouteName);

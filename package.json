@@ -5,7 +5,9 @@
   "license": "SEE LICENSE IN LICENSE.md",
   "description": "README.md",
   "scripts": {
-    "lint": "eslint alexa-app-router.js;"
+    "coverage": "istanbul cover _mocha -- -R spec",
+    "lint": "eslint alexa-app-router.js;",
+    "test": "./node_modules/.bin/mocha"
   },
   "repository": {
     "type": "git",
@@ -25,9 +27,16 @@
   },
   "homepage": "https://github.com/alexa-js/alexa-app-router#readme",
   "devDependencies": {
+    "alexa-app": "^3.2.0",
+    "chai": "^3.5.0",
     "eslint": "^3.14.1",
     "eslint-config-standard": "^6.2.1",
     "eslint-plugin-promise": "^3.4.0",
-    "eslint-plugin-standard": "^2.0.1"
+    "eslint-plugin-standard": "^2.0.1",
+    "istanbul": "^0.4.5",
+    "lodash": "^4.17.4",
+    "mocha": "^3.2.0",
+    "sinon": "^1.17.7",
+    "sinon-chai": "^2.8.0"
   }
 }
