@@ -1,3 +1,5 @@
+var url = require('url');
+
 var router = {};
 
 router.addRouter = function(app, config, intents, routes) {
@@ -9,26 +11,27 @@ router.addRouter = function(app, config, intents, routes) {
   app.$$intent = app.intent;
   app.intent = intentHandler;
 
-  registerIntents(intents);
-  registerRoutes(routes, config);
-  registerDefaultIntents(routes);
+  app.$$routeConfig = config || {};
+  app.$$routeIntents = intents || {};
+  app.$$routeList = routes || {};
 
-  function registerIntents(intents) {
-    if (typeof intents !== 'object') return;
+  registerIntents();
+  registerRoutes();
+  registerDefaultIntents();
 
-    for (var name in intents) {
-      if (intents[name]) {
-        app.intent(name, intents[name], noop);
+  function registerIntents() {
+    if (typeof app.$$routeIntents !== 'object') return;
+
+    for (var name in app.$$routeIntents) {
+      if (app.$$routeIntents[name]) {
+        app.intent(name, app.$$routeIntents[name], noop);
       } else {
         app.intent(name, noop);
       }
     }
   }
 
-  function registerRoutes(routes, config) {
-    app.$$routeList = routes || {};
-    app.$$routeConfig = config || {};
-
+  function registerRoutes() {
     if (typeof app.$$routeConfig.pre === 'function') {
       app.pre = app.$$routeConfig.pre;
     }
@@ -42,24 +45,22 @@ router.addRouter = function(app, config, intents, routes) {
     }
   }
 
-  function registerDefaultIntents(routes) {
-    for (var routeName in routes) {
-      for (var intentName in routes[routeName]) {
-        if (!app.intents[intentName]) {
-          app.intent(intentName, noop);
-        }
+  function registerDefaultIntents() {
+    var defaultRoutes = app.$$routeConfig && app.$$routeConfig.defaultRoutes || {};
+
+    for (var intentName in defaultRoutes) {
+      if (!app.intents[intentName]) {
+        app.intent(intentName, noop);
       }
     }
   }
 
-  function noop(request, response) {}
-
   function launchHandler(handler) {
     app.$$launch(function(request, response) {
-      response.route = function(nextRouteName) {
+      response.route = function(nextRoutes) {
         response
           .shouldEndSession(false)
-          .session('route', nextRouteName);
+          .session('route', nextRoutes);
         return response;
       };
 
@@ -74,12 +75,7 @@ router.addRouter = function(app, config, intents, routes) {
     }
 
     app.$$intent(name, config, function(request, response) {
-      var routeName;
-      routeName = request.session('route');
-      response.session('route', null);
-
-      request.route = routeName;
-
+      // Set up route handler on response.
       response.route = function(nextRouteName) {
         response
           .shouldEndSession(false)
@@ -87,20 +83,86 @@ router.addRouter = function(app, config, intents, routes) {
         return response;
       };
 
-      // Call route handler
-      var routeHandler = app.$$routeList[routeName];
-      var defaultRouteHandler = app.$$routeList[app.$$routeConfig.defaultRoute];
+      // Get current route set last session, if available
+      var routes;
+      routes = request.session('route') || {};
+      response.session('route', null);
 
-      if (routeHandler && typeof routeHandler[name] === 'function') {
-        return routeHandler[name].apply(null, arguments);
-      } else if (defaultRouteHandler && typeof defaultRouteHandler[name] === 'function') {
-        return defaultRouteHandler[name].apply(null, arguments);
+      var routeUrl = routes[name] || routes['default'] || getDefaultRoute(name);
+      request.route = parseRoute(routeUrl, app.$$routeList);
+      var routeHandler = request.route && app.$$routeList[request.route.route];
+
+      if (typeof routeHandler === 'function') {
+        // Call route handler
+        return routeHandler.apply(null, arguments);
       } else {
-        // Call original handler if no route matches
-        return handler.apply(null, arguments);
+        throw new Error('No handler for ' + name + ' at route ' + request.route);
       }
     });
   }
+
+  function getDefaultRoute(name) {
+    return app.$$routeConfig && app.$$routeConfig.defaultRoutes && app.$$routeConfig.defaultRoutes[name];
+  }
+
+  function parseRoute(route, routes) {
+    route = route || '';
+    routes = routes || {};
+
+    var parsedUrl = url.parse(route, true);
+
+    if (!parsedUrl || typeof parsedUrl.pathname !== 'string') return null;
+
+    var parts = parsedUrl.pathname.split('/');
+
+    var analyzedRoutes = Object.keys(routes)
+      .map(function(target) {
+        var targetParts = target.split('/');
+
+        if (targetParts.length !== parts.length) return null;
+
+        // Match target parts against route parts
+        var params = {};
+        var specificity = 0;
+        targetParts.forEach(function(part, index) {
+          // Specificity determines how exact the match is, with a 1 for exact match, 0 for url param.
+          // The total specificity is a binary number with each entry matching a segment from left to right.
+          specificity *= 2;
+          var regex = /^{([a-zA-Z_$][0-9a-zA-Z_$]*)}$/.exec(targetParts[index]);
+          var urlParam = regex && regex[1];
+
+          if (targetParts[index] === parts[index]) {
+            // A segment was an exact match
+            specificity++;
+          } else if (urlParam) {
+            // A segment was a fuzzy (url parameter) match
+            params[urlParam] = parts[index];
+          } else {
+            // A segment didn't match
+            return null;
+          }
+        });
+
+        return {
+          params: params,
+          route: target,
+          specificity: specificity
+        };
+      })
+      .filter(function(r) { return r; })
+      .sort(function(a, b) { return b.specificity - a.specificity; });
+
+    if (!analyzedRoutes.length) return null;
+
+    return {
+      params: analyzedRoutes[0].params,
+      query: parsedUrl.query,
+      route: analyzedRoutes[0].route,
+      url: route
+    };
+  }
+
+  function noop(request, response) {}
 
   return app;
 };

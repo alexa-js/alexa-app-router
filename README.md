@@ -1,10 +1,27 @@
 # alexa-app-router
 A simple router for the Alexa `alexa-app` library.
 
-# Usage
+# Table of Contents
+* [Usage](#usage)
+* [Breaking Changes](#breaking-changes)
+* [Installation](#installation)
+* [Registering the Router](#registering-the-router)
+* [Gotchas and Important Notes](#gotchas-and-important-notes)
+* [Config](#config)
+* [Intents](#intents)
+* [Routes](#routes)
+* [Going to a Route](#going-to-a-route)
+* [Route Parameters](#route-parameters)
+* [Backwards Compatibility](#backwards-compatibility)
+
+## Usage
 Read the [alexa-app](https://github.com/alexa-js/alexa-app) documentation before using this add-on utility.
 
-Sample app with code usage available in the [mountain top](https://github.com/nickcoury/mountain-top) project.
+Sample app with code usage available in the [alexa-adopt-a-pet](https://github.com/nickcoury/alexa-adopt-a-pet) project.
+
+## Breaking Changes
+From `0.0.X` to `0.1.X` breaking changes were introduced:
+  - The whole routing paradigm has been made more intuitive, flexible, and powerful. Read the docs below for updates.
 
 ## Installation
 ```
@@ -25,11 +42,28 @@ var routes = {...};
 router.addRouter(app, config, intents, routes);
 ```
 
+## Gotchas and Important Notes
+1. Every intent your app uses (including Amazon default intents) must be specified in `config.defaultRoutes`.
+
 ## Config
 Configuration for the router.
 ```
 var config = {
-  defaultRoute: '/',
+  defaultRoutes: {
+    'AMAZON.CancelIntent': '/exit',
+    'AMAZON.HelpIntent': '/help',
+    'AMAZON.NextIntent': '/',
+    'AMAZON.PreviousIntent': '/',
+    'AMAZON.RepeatIntent': '/',
+    'AMAZON.ResumeIntent': '/',
+    'AMAZON.StartOverIntent': '/',
+    'AMAZON.StopIntent': '/exit',
+    'AMAZON.YesIntent': '/',
+    PetDetailsIntent: '/pets/{petId}',
+    FindPetIntent: '/pets?offset=0',
+    FindShelterIntent: '/shelters?limit=5',
+    MenuIntent: '/menu'
+  },
   pre: preHandler,
   post: postHandler,
   launch: launchHandler
@@ -38,8 +72,8 @@ function preHandler(request, response) {...},
 function postHandler(request, response) {...},
 function launchHandler(request, response) {...}
 ```
-### defaultRoute
-See Router Logic below.
+### defaults
+Contains the default routes to use when no route is specified. These are used on first launch, and when no route has otherwise been specified.
 ### pre
 Shorthand for `app.pre = function preHandler(request, response) {...}`;
 ### post
@@ -50,110 +84,116 @@ Shorthand for `app.launch = function launchHandler(request, response) {...}`;
 ## Intents
 Shorthand for registering intents. 
 
-We never need to specify intent handlers directly, since this is done with the default route (See Router Logic for more details).
+We never need to specify intent handlers directly using `alexa-app`.
 ```
 var intents = {
-  NumberIntent: {
-    'slots': {'number': 'NUMBER'},
-    'utterances': ['say the number {1-100|number}']
+  FindPetIntent: {
+    slots: {ANIMAL_TYPE: 'ANIMAL_TYPE'},
+    utterances: ['{adopt a |find a }{-|ANIMAL_TYPE}']
   },
-  'AMAZON.YesIntent': null
+  MenuIntent: {utterances: ['{menu|help}']},
+  ...(more intents)
 };
 ```
 This is equivalent to:
 ```
-app.intent('NumberIntent',
+app.intent('FindPetIntent',
   {
-    'slots': {'number': 'NUMBER'},
-    'utterances': ['say the number {1-100|number}']
+    'slots': {ANIMAL_TYPE: 'ANIMAL_TYPE'},
+    'utterances': ['{adopt a |find a }{-|ANIMAL_TYPE}']
   },
   function(request,response) {}
 );
-app.intent('AMAZON.YesIntent',
+app.intent('MenuIntent',
+  {utterances: ['{menu|help}']}
   function(request,response) {}
 );
+...
 ```
 
 ## Routes
 Format for registering routes.
 
-Note that the url-style routing is recommended, but not currently required. For now, all routes are exact-matched only without any parameter support (coming in a future version!)
-
-One route needs to be registered as a default route, and should be considered the 'default' state of your app (See Config section).  It should handle every intent your app uses, and should handle intents as if the app was just opened.
-
-The rest of the routes should be built as the 'router state' not the 'user state', unlike most web-style routers. In other words, `.route('/summary')` doesn't indicate the user has received the summary. It instead indicates the router should handle a response about the summary. It may be easier to write `/go-to-summary` instead of `/summary` to indicate the user could respond with 'Yes', 'No', 'Menu', or anything else before the summary is provided.  (See Router Logic for more details).
+The url-style routing is strongly recommended. Special processing is done with route variables (`{id}`) and query parameters (`?limit=10&offset=5`) assuming url-style routes.
 ```
 var routes = {
-    '/': {
-        'AMAZON.HelpIntent': menuHandler,
-        RecentActivitiesIntent: recentActivitiesHandler,
-        SummaryIntent: summaryHandler
-    },
-    '/go-to-summary': {
-        'AMAZON.NoIntent': menuHandler,
-        'AMAZON.YesIntent': summaryHandler
-    }
+    '/': launchHandler,
+    '/exit': exitHandler,
+    '/help': helpHandler,
+    '/menu': menuHandler,
+    '/pets': findPetHandler,
+    '/pets/{petId}': petDetailsHandler,
+    '/shelters': findShelterHandler,
 };
+function launchHandler(request, response {...}
+function exitHandler(request, response {...}
+function helpHandler(request, response {...}
 function menuHandler(request, response {...}
-function recentActivitiesHandler(request, response {...}
-function summaryHandler(request, response {...}
+function findPetHandler(request, response {...}
+function petDetailsHandler(request, response {...}
+function findShelterHandler(request, response {...}
 ```
 
 ## Going to a Route
+When prompting the user for a new response, provide the `.route()` command a map of routes to go to depending on the user's response. The route is chosen in the following way:
+1. Exact intent match from `.route()`.
+2. Route specified on the `default` entry.
+3. Intent match on `config.defaultRoutes`.
 ```
 function launchHandler(request, response) {
-  var text = 'Welcome to my app. Would you like to hear your summary?'; 
+  var text = 'Welcome to my app. Would you like a list of commands?';
   response
     .say(text)
-    .route('/go-to-summary')
+    .route({
+      'default': '/'
+      'AMAZON.CancelIntent': '/exit',
+      'AMAZON.NoIntent': '/exit',
+      'AMAZON.YesIntent': '/help',
+      FindPetIntent: '/pets?offset=0',
+      FindShelterIntent: '/shelters?limit=5'
+    })
     .send();
 }
 ```
-Internally the route is saved on the `route` session variable.  `.route(routeName)` is equivalent to:
+This allows two useful features:
+1. Since Alexa can receive any available intent at any time, you can stop unexpected intents by using the `default` route here.
+2. You don't have to specify, for example, `'AMAZON.HelpIntent': '/help'` every time if it is set up on `config.defaultRoutes` and you don't use `default`;
+
+Internally the route is saved on the `route` session variable.  `.route(routes)` is equivalent to:
 ```
 response
   .shouldEndSession(false)
-  .session('route', routeName)
+  .session('route', routes)
 ```
-The current route can be retrieved with `request.route`.
 
-## Router Logic
-When an intent is received, the router will look for a route handler in the following order:
-1. [Exact] Match a handler on the route name set in `response.route()`.
-2. [Default] Match a handler on the route name set in `config.defaultRoute`.
-3. [Intent] Execute the original intent handler if no route match was found (defaulted to `noop`).
+## Route Parameters
+Routes support both url and query string parameters.
 
-Using the example routes above, consider the following:
-1. `response.route('/go-to-summary')` is set, and an `AMAZON.YesIntent` is received next. `summaryHandler` is called. [Exact]
-2. `response.route('/go-to-summary')` is set, and a `SummaryIntent` is received next. `summaryHandler` is called. [Default]
-3. `response.route('/go-to-summary')` is set, and a `AMAZON.HelpIntent` is received next. `menuHandler` is called. [Default]
-4. No route is set, and a `SummaryIntent` is received next. `summaryHandler` is called. [Default]
-5. No route is set, and a `NumberIntent` is received next. The handler from `app.intent('NumberIntent', ...)` is called. [Intent]
+E.g. `.route('/pets/123/photos/45678?format=png&size=large')` will match the route `/pets/{petId}/photos/{photoId}`.
 
+The current route info can be retrieved with `request.route`:
+```
+request.route = {
+  params: {
+    petId: '123',
+    photoId: '45678'
+  },
+  query: {
+    format: 'png',
+    size: 'large'
+  },
+  route: '/pets/{petId}/photos/{photoId}',
+  url: '/pets/123/photos/45678?format=png&size=large'
+}
+```
 
-## Miscellaneous
-The router automatically registers any intents it find in the routes list with a blank handler, so it will be configured properly with the Alexa Skills Kit. This will never override a handler registered with `intents` or `app.intent()`. In other words, the `'AMAZON.YesIntent': null` in `intents` above is unnecessary. 
+This allows easy management of complex state flows.  Consider the following interaction with the sample routes/intents above:
+1. User calls the Pet skill and asks to view pets. The `config.defaultRoutes` handler for `PetIntent` is set to `'/pets?limit=1&offset=0'` which calls the `findPetHandler()`.
+2. User asks for the next pet and `AMAZON.NextIntent` is triggered. In the `findPetHandler`, dynamically route `AMAZON.NextIntent` to `'/pets?limit=1&offset=' + (request.route.query.offset + 1)`.
+3. Suppose this returns a pet with an internal Id of `123` in `findPetHandler()`.  When the user asks for more details, a `MoreDetailsIntent` is triggered.
+4. The `MoreDetailsIntent` can be dynamically routed to `'/pets/' + pet.Id` which calls `petDetailsHandler()` with the pet Id.
 
-The route names are simply strings. The `/` convention is used for familiarity, but not required.
-
-### Backwards Compatibility
+## Backwards Compatibility
 All functionality is backwards compatible with [alexa-app](https://github.com/alexa-js/alexa-app). Intents can be registered normally, the router intents are simply a shorthand for convenience.
 
-## Future
-- Allow route parameters, e.g. `/go-to-page/{page}`.
-- Allow query parameters, e.g. `/go-to-page?page=3&pageSize=10`.
-- Allow a default handler for a route, with or without specifically defined handlers. e.g.
-```
-var routes = {
-    '/': {...},
-    '/go-to-summary': {...},
-    '/maybe-go-to-summary': {
-        'AMAZON.NoIntent': menuHandler,
-        default: summaryHandler
-    },
-    '/force-go-to-summary': summaryHandler
-};
-```
-
-Special thanks to Matt Kruse for his excellent [alexa-app](https://github.com/alexa-js/alexa-app)!
-
+Special thanks to [Matt Kruse](https://github.com/matt-kruse) for his excellent [alexa-app](https://github.com/alexa-js), and [Daniel Doubrovkine](https://github.com/dblock) for his work maintaining it!

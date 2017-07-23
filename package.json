@@ -1,13 +1,12 @@
 {
   "name": "alexa-app-router",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "main": "alexa-app-router.js",
   "license": "SEE LICENSE IN LICENSE.md",
   "description": "README.md",
   "scripts": {
-    "coverage": "istanbul cover _mocha -- -R spec",
     "lint": "eslint alexa-app-router.js;",
-    "test": "./node_modules/.bin/mocha"
+    "test": "nyc --reporter=html --reporter=text ./node_modules/.bin/mocha"
   },
   "repository": {
     "type": "git",
@@ -27,15 +26,15 @@
   },
   "homepage": "https://github.com/alexa-js/alexa-app-router#readme",
   "devDependencies": {
-    "alexa-app": "^3.2.0",
+    "alexa-app": "^4.0.1",
     "chai": "^3.5.0",
     "eslint": "^3.14.1",
     "eslint-config-standard": "^6.2.1",
     "eslint-plugin-promise": "^3.4.0",
     "eslint-plugin-standard": "^2.0.1",
-    "istanbul": "^0.4.5",
     "lodash": "^4.17.4",
     "mocha": "^3.2.0",
+    "nyc": "^11.0.3",
     "sinon": "^1.17.7",
     "sinon-chai": "^2.8.0"
   }
