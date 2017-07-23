@@ -72,7 +72,7 @@ function preHandler(request, response) {...},
 function postHandler(request, response) {...},
 function launchHandler(request, response) {...}
 ```
-### defaults
+### defaultRoutes
 Contains the default routes to use when no route is specified. These are used on first launch, and when no route has otherwise been specified.
 ### pre
 Shorthand for `app.pre = function preHandler(request, response) {...}`;
