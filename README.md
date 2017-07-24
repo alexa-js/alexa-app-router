@@ -2,33 +2,29 @@
 A simple router for the Alexa `alexa-app` library.
 
 # Table of Contents
-* [Usage](#usage)
+* [Quick Start](#quick-start)
+  * [Installation](#installation)
+  * [Registering the Router](#registering-the-router)
+  * [Routes](#routes)
+  * [Intents](#intents)
+  * [Config](#config)
 * [Breaking Changes](#breaking-changes)
-* [Installation](#installation)
-* [Registering the Router](#registering-the-router)
 * [Gotchas and Important Notes](#gotchas-and-important-notes)
-* [Config](#config)
-* [Intents](#intents)
-* [Routes](#routes)
 * [Going to a Route](#going-to-a-route)
 * [Route Parameters](#route-parameters)
 * [Backwards Compatibility](#backwards-compatibility)
 
-## Usage
+## Quick Start
 Read the [alexa-app](https://github.com/alexa-js/alexa-app) documentation before using this add-on utility.
 
 Sample app with code usage available in the [alexa-adopt-a-pet](https://github.com/nickcoury/alexa-adopt-a-pet) project.
 
-## Breaking Changes
-From `0.0.X` to `0.1.X` breaking changes were introduced:
-  - The whole routing paradigm has been made more intuitive, flexible, and powerful. Read the docs below for updates.
-
-## Installation
+### Installation
 ```
 npm install alexa-app alexa-app-router --save
 ```
 
-## Registering the Router
+### Registering the Router
 ```
 var alexa = require('alexa-app');
 var router = require('alexa-app-router');
@@ -42,10 +38,36 @@ var routes = {...};
 router.addRouter(app, config, intents, routes);
 ```
 
-## Gotchas and Important Notes
-1. Every intent your app uses (including Amazon default intents) must be specified in `config.defaultRoutes`.
+## Routes
+Ul-style routing is strongly recommended. Special processing is done with route variables (`{id}`) and query parameters (`?limit=10&offset=5`).
+```
+var routes = {
+    '/': launchHandler,
+    '/exit': exitHandler,
+    '/help': helpHandler,
+    '/menu': menuHandler,
+    '/pets': findPetHandler,
+    '/pets/{petId}': petDetailsHandler,
+    '/shelters': findShelterHandler,
+};
+function launchHandler(request, response) {...}
+...(more handler functions)
+```
 
-## Config
+### Intents
+`alexa-app-router` uses a special shorthand for registering intents, normal intent registration with `alexa-app` is not necessary.
+```
+var intents = {
+  FindPetIntent: {
+    slots: {ANIMAL_TYPE: 'ANIMAL_TYPE'},
+    utterances: ['{adopt a |find a }{-|ANIMAL_TYPE}']
+  },
+  MenuIntent: {utterances: ['{menu|help}']},
+  ...(more intents)
+};
+```
+
+### Config
 Configuration for the router.
 ```
 var config = {
@@ -72,67 +94,21 @@ function preHandler(request, response) {...},
 function postHandler(request, response) {...},
 function launchHandler(request, response) {...}
 ```
-### defaultRoutes
+#### defaultRoutes
 Contains the default routes to use when no route is specified. These are used on first launch, and when no route has otherwise been specified.
-### pre
+#### pre
 Shorthand for `app.pre = function preHandler(request, response) {...}`;
-### post
+#### post
 Shorthand for `app.post = function postHandler(request, response) {...}`;
-### launch
+#### launch
 Shorthand for `app.launch = function launchHandler(request, response) {...}`;
 
-## Intents
-Shorthand for registering intents. 
+## Breaking Changes
+From `0.0.X` to `0.1.X` breaking changes were introduced:
+  - The whole routing paradigm has been made more intuitive, flexible, and powerful. Read the docs below for updates.
 
-We never need to specify intent handlers directly using `alexa-app`.
-```
-var intents = {
-  FindPetIntent: {
-    slots: {ANIMAL_TYPE: 'ANIMAL_TYPE'},
-    utterances: ['{adopt a |find a }{-|ANIMAL_TYPE}']
-  },
-  MenuIntent: {utterances: ['{menu|help}']},
-  ...(more intents)
-};
-```
-This is equivalent to:
-```
-app.intent('FindPetIntent',
-  {
-    'slots': {ANIMAL_TYPE: 'ANIMAL_TYPE'},
-    'utterances': ['{adopt a |find a }{-|ANIMAL_TYPE}']
-  },
-  function(request,response) {}
-);
-app.intent('MenuIntent',
-  {utterances: ['{menu|help}']}
-  function(request,response) {}
-);
-...
-```
-
-## Routes
-Format for registering routes.
-
-The url-style routing is strongly recommended. Special processing is done with route variables (`{id}`) and query parameters (`?limit=10&offset=5`) assuming url-style routes.
-```
-var routes = {
-    '/': launchHandler,
-    '/exit': exitHandler,
-    '/help': helpHandler,
-    '/menu': menuHandler,
-    '/pets': findPetHandler,
-    '/pets/{petId}': petDetailsHandler,
-    '/shelters': findShelterHandler,
-};
-function launchHandler(request, response {...}
-function exitHandler(request, response {...}
-function helpHandler(request, response {...}
-function menuHandler(request, response {...}
-function findPetHandler(request, response {...}
-function petDetailsHandler(request, response {...}
-function findShelterHandler(request, response {...}
-```
+## Gotchas and Important Notes
+1. Every intent your app uses (including Amazon default intents) must be specified in `config.defaultRoutes`.
 
 ## Going to a Route
 When prompting the user for a new response, provide the `.route()` command a map of routes to go to depending on the user's response. The route is chosen in the following way:
