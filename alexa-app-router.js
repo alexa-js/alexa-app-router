@@ -96,7 +96,7 @@ router.addRouter = function(app, config, intents, routes) {
         // Call route handler
         return routeHandler.apply(null, arguments);
       } else {
-        throw new Error('No handler for ' + name + ' at route ' + request.route);
+        throw new Error('No handler for ' + name + ' at route ' + request.route.route);
       }
     });
   }

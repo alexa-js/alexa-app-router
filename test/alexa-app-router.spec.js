@@ -14,6 +14,8 @@ var intents;
 var routes;
 
 describe('alexa-app-router', function() {
+  var appIntentOriginal;
+  var appLaunchOriginal;
   var exitHandler, helpHandler, testHandler;
   var event, context, callback;
 
@@ -28,6 +30,7 @@ describe('alexa-app-router', function() {
         'AMAZON.HelpIntent': '/help',
         TestIntent: '/test'
       },
+      post: sinon.stub(),
       pre: sinon.stub(),
       launch: sinon.stub()
     };
@@ -100,6 +103,15 @@ describe('alexa-app-router', function() {
     callback = sinon.stub();
 
     sinon.spy(app, 'intent');
+    sinon.spy(app, 'launch');
+
+    appIntentOriginal = app.intent;
+    appLaunchOriginal = app.launch;
+  });
+
+  afterEach(function() {
+    appIntentOriginal.restore();
+    appLaunchOriginal.restore();
   });
 
   describe('instantiated without alexa app', function() {
@@ -112,19 +124,74 @@ describe('alexa-app-router', function() {
     });
   });
 
-  describe('instantiated with valid alexa app', function() {
-    var appLaunchOriginal;
-    var appIntentOriginal;
+  describe('instantiated without config, routes, and intents', function() {
     beforeEach(function() {
-      appLaunchOriginal = app.launch;
-      appIntentOriginal = app.intent;
+      app = router.addRouter(app);
     });
 
+    it('should set default empty objects', function() {
+      expect(app.$$routeConfig).to.deep.equal({});
+      expect(app.$$routeIntents).to.deep.equal({});
+      expect(app.$$routeList).to.deep.equal({});
+    });
+  });
+
+  describe('with a blank intent', function() {
+    beforeEach(function() {
+      intents.BlankIntent = null;
+      app = router.addRouter(app, config, intents, routes);
+    });
+
+    it('should set up a blank intent handler', function() {
+      expect(app.$$intent).to.have.been.calledWithMatch('BlankIntent', null);
+    });
+  });
+
+  describe('instantiated with valid alexa app', function() {
     it('should wrap the proper methods', function() {
       app = router.addRouter(app, config, intents, routes);
-
       expect(app.$$launch).to.equal(appLaunchOriginal);
       expect(app.$$intent).to.equal(appIntentOriginal);
+    });
+
+    it('should handle the launch request that routes', function() {
+      var nextRoutes = {'NextIntent': '/next'};
+      config.launch = function(request, response) {
+        response.route(nextRoutes);
+      };
+      app = router.addRouter(app, config, intents, routes);
+
+      event.request.type = 'LaunchRequest';
+      app.handler(event, context, function(err, result) {
+        expect(result.response.shouldEndSession).to.equal(false);
+        expect(result.sessionAttributes.route).to.deep.equal(nextRoutes);
+      });
+    });
+
+    it('should handle a standard intent request that routes', function() {
+      var nextRoutes = {'NextIntent': '/next'};
+      routes['/test'] = function(request, response) {
+        response.route(nextRoutes);
+      };
+      app = router.addRouter(app, config, intents, routes);
+
+      event.request.intent.name = 'TestIntent';
+      app.handler(event, context, function(err, result) {
+        expect(result.response.shouldEndSession).to.equal(false);
+        expect(result.sessionAttributes.route).to.deep.equal(nextRoutes);
+      });
+    });
+  });
+
+  describe('missing a route handler', function() {
+    it('should throw an error', function() {
+      routes['/test'] = 3;
+      app = router.addRouter(app, config, intents, routes);
+
+      event.request.intent.name = 'TestIntent';
+      app.handler(event, context, function(err, result) {
+        expect(err).to.equal('Unhandled exception: No handler for TestIntent at route /test.');
+      });
     });
   });
 
@@ -173,14 +240,8 @@ describe('alexa-app-router', function() {
     it('should throw an error', function(done) {
       app = router.addRouter(app, config, intents, routes);
       app.handler(event, context, function(err, result) {
-        expect(helpHandler).to.have.been.calledWithMatch({
-          route: {
-            params: {},
-            query: {},
-            route: '/help',
-            url: '/help'
-          }
-        });
+        expect(result.response.outputSpeech.ssml).to
+          .equal('<speak>Sorry, the application didn\'t know what to do with that intent</speak>');
         done();
       });
     });
