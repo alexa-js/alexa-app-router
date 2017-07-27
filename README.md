@@ -1,6 +1,10 @@
 # alexa-app-router
 A simple router for the Alexa `alexa-app` library.
 
+
+[![NPM](https://img.shields.io/npm/v/alexa-app-router.svg)](https://www.npmjs.com/package/alexa-app-router/)
+[![Build Status](https://travis-ci.org/alexa-js/alexa-app-router.svg?branch=master)](https://travis-ci.org/alexa-js/alexa-app-router)
+
 # Table of Contents
 * [Quick Start](#quick-start)
   * [Installation](#installation)
